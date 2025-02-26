@@ -2,9 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../data/app_state.dart';
 import '../data/veggie.dart';
 import '../widgets/veggie_headline.dart';
@@ -19,9 +22,22 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> with RestorationMixin {
+  bool _isLoading = true;
   final controller = RestorableTextEditingController();
   final focusNode = FocusNode();
   String? terms;
+
+  @override
+  void initState() {
+    super.initState();
+    Random random = Random();
+    int randomNumber = random.nextInt(3) + 1;
+    Future.delayed(Duration(seconds: randomNumber), () {
+      setState(() {
+        _isLoading = false;
+      });
+    });
+  }
 
   @override
   String? get restorationId => widget.restorationId;
@@ -55,6 +71,10 @@ class _SearchScreenState extends State<SearchScreen> with RestorationMixin {
   }
 
   Widget _buildSearchResults(List<Veggie> veggies) {
+    if (_isLoading) {
+      return const Center(child: CupertinoActivityIndicator());
+    }
+
     if (veggies.isEmpty) {
       return Center(
         child: Padding(

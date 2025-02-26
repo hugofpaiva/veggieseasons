@@ -2,19 +2,50 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../data/app_state.dart';
 import '../data/preferences.dart';
 import '../data/veggie.dart';
 import '../styles.dart';
 import '../widgets/veggie_card.dart';
 
-class ListScreen extends StatelessWidget {
+class ListScreen extends StatefulWidget {
   const ListScreen({this.restorationId, super.key});
 
   final String? restorationId;
+
+  @override
+  State<ListScreen> createState() => _ListScreenState();
+}
+
+class _ListScreenState extends State<ListScreen> with RestorationMixin {
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    Random random = Random();
+    int randomNumber = random.nextInt(3) + 1;
+    Future.delayed(Duration(seconds: randomNumber), () {
+      setState(() {
+        _isLoading = false;
+      });
+    });
+  }
+
+  @override
+  void restoreState(RestorationBucket? oldBucket, bool initialRestore) {
+    // No state to restore for now
+  }
+
+  @override
+  String? get restorationId => widget.restorationId;
 
   Widget _generateVeggieCard(
     Veggie veggie,
@@ -35,57 +66,61 @@ class ListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoTabView(
-      restorationScopeId: restorationId,
-      builder: (context) {
-        final appState = Provider.of<AppState>(context);
-        final prefs = Provider.of<Preferences>(context);
-        final themeData = CupertinoTheme.of(context);
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle(
-            statusBarBrightness: MediaQuery.platformBrightnessOf(context),
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: ListView.builder(
-              restorationId: 'list',
-              itemCount: appState.allVeggies.length + 2,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                    child: Text(
-                      'In season today',
-                      style: Styles.headlineText(themeData),
-                    ),
-                  );
-                } else if (index <= appState.availableVeggies.length) {
-                  return _generateVeggieCard(
-                    appState.availableVeggies[index - 1],
-                    prefs,
-                  );
-                } else if (index <= appState.availableVeggies.length + 1) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                    child: Text(
-                      'Not in season',
-                      style: Styles.headlineText(themeData),
-                    ),
-                  );
-                } else {
-                  var relativeIndex =
-                      index - (appState.availableVeggies.length + 2);
-                  return _generateVeggieCard(
-                    appState.unavailableVeggies[relativeIndex],
-                    prefs,
-                    inSeason: false,
-                  );
-                }
-              },
+    if (_isLoading) {
+      return const Center(child: CupertinoActivityIndicator());
+    } else {
+      return CupertinoTabView(
+        restorationScopeId: restorationId,
+        builder: (context) {
+          final appState = Provider.of<AppState>(context);
+          final prefs = Provider.of<Preferences>(context);
+          final themeData = CupertinoTheme.of(context);
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarBrightness: MediaQuery.platformBrightnessOf(context),
             ),
-          ),
-        );
-      },
-    );
+            child: SafeArea(
+              bottom: false,
+              child: ListView.builder(
+                restorationId: 'list',
+                itemCount: appState.allVeggies.length + 2,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                      child: Text(
+                        'In season today',
+                        style: Styles.headlineText(themeData),
+                      ),
+                    );
+                  } else if (index <= appState.availableVeggies.length) {
+                    return _generateVeggieCard(
+                      appState.availableVeggies[index - 1],
+                      prefs,
+                    );
+                  } else if (index <= appState.availableVeggies.length + 1) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                      child: Text(
+                        'Not in season',
+                        style: Styles.headlineText(themeData),
+                      ),
+                    );
+                  } else {
+                    var relativeIndex =
+                        index - (appState.availableVeggies.length + 2);
+                    return _generateVeggieCard(
+                      appState.unavailableVeggies[relativeIndex],
+                      prefs,
+                      inSeason: false,
+                    );
+                  }
+                },
+              ),
+            ),
+          );
+        },
+      );
+    }
   }
 }

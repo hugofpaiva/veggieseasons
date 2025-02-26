@@ -3,11 +3,14 @@
 // found in the LICENSE file.
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../data/preferences.dart';
 import '../data/veggie.dart';
 import '../styles.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VeggieCategorySettingsScreen extends StatelessWidget {
   const VeggieCategorySettingsScreen({super.key, this.restorationId});
@@ -199,6 +202,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  CupertinoListTile _buildContactPermissionTile(BuildContext context) {
+    return CupertinoListTile.notched(
+      title: const Text(
+        'Grant Contact Access',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+      subtitle: const Text('Allow this app to access your contacts'),
+      onTap: () async {
+        final status = await Permission.contacts.request();
+        String message =
+            status.isGranted
+                ? 'Contact permission granted'
+                : 'Contact permission denied';
+
+        if (!context.mounted) return;
+        await showCupertinoDialog<void>(
+          context: context,
+          builder:
+              (context) => CupertinoAlertDialog(
+                title: const Text('Contact Permission'),
+                content: Text(message),
+                actions: <CupertinoDialogAction>[
+                  CupertinoDialogAction(
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+        );
+      },
+    );
+  }
+
   CupertinoListTile _buildCategoriesTile(
     BuildContext context,
     Preferences prefs,
@@ -272,6 +308,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   _buildCaloriesTile(context, prefs),
                   _buildCategoriesTile(context, prefs),
+                  if (!kIsWeb) _buildContactPermissionTile(context),
                 ],
               ),
               CupertinoListSection.insetGrouped(
